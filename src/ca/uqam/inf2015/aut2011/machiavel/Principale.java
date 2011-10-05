@@ -78,7 +78,7 @@ public class Principale {
 
             rootNodes[positionFichierTraiter] = BibliothequeRoutines.calculAmortissement(rootNodes[positionFichierTraiter]);
 
-            String NomFichierSortie = dossierExtrants + "\\" + BibliothequeRoutines.extraireNomFichier(fichiers_Dans_dossierIntrants[positionFichierTraiter].toString());
+            String NomFichierSortie = dossierExtrants + "/" + BibliothequeRoutines.extraireNomFichier(fichiers_Dans_dossierIntrants[positionFichierTraiter].toString());
 
             File FichierSortie = new File(NomFichierSortie);
             mapper.writeTree(rootNodes[positionFichierTraiter], FichierSortie);

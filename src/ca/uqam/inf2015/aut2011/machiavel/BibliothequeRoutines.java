@@ -18,13 +18,13 @@ public class BibliothequeRoutines {
 
     protected static String genererDossierIntrants() throws IOException {
         String nomDossier = new java.io.File(".").getCanonicalPath();
-        nomDossier += "\\intrant";
+        nomDossier += "/intrant";
         return nomDossier;
     }
 
     protected static String genererDossierExtrants() throws IOException {
         String nomDossier = new java.io.File(".").getCanonicalPath();
-        nomDossier += "\\extrant";
+        nomDossier += "/extrant";
         return nomDossier;
     }
 
@@ -32,7 +32,7 @@ public class BibliothequeRoutines {
         String resultat = "";
         int j = nomFichier.length() - 1;
         for (int i = 0;; i++) {
-            if (nomFichier.charAt(j) != '\\') {
+            if (nomFichier.charAt(j) != '/') {
                 resultat += nomFichier.charAt(j);
                 j--;
             } else {
@@ -87,16 +87,32 @@ public class BibliothequeRoutines {
         frequenceComposition_valeur = sourceNode.path(frequenceComposition).getValueAsDouble();
         nombrePaiementsMensuels = nombreAnnee_valeur * frequenceRemboursement_valeur;
         
-        double tauxParPeriode=tauxInteret_valeur/frequenceComposition_valeur;
+        double tauxParPeriode=tauxInteret_valeur*0.01/frequenceComposition_valeur;
+        double tauxMensuel=tauxParPeriode;  //frequenceComposition=12
        
-        double tauxMensuel = tauxParPeriode/(12/frequenceComposition_valeur);
+        /**********************************************/
+        if(frequenceComposition_valeur==1) 
+        
+        tauxMensuel =  Math.sqrt(Math.sqrt(Math.cbrt(1+tauxParPeriode)))-1;
+        else if(frequenceComposition_valeur==2)
+
+        tauxMensuel = Math.sqrt(Math.cbrt(1+tauxParPeriode))-1;
+        else if(frequenceComposition_valeur == 3)
+
+        tauxMensuel = Math.sqrt(Math.sqrt(1+tauxParPeriode))-1;
+        else if(frequenceComposition_valeur == 4)
+
+        tauxMensuel = Math.cbrt(1+tauxParPeriode)-1;
+         else if(frequenceComposition_valeur==6)
+
+        tauxMensuel = Math.sqrt(1+tauxParPeriode)-1;   
       
               
         System.out.println("Taux mensuel=" + tauxMensuel);
 
-        double numerateur = (montant_valeur * (tauxMensuel*0.01));
+        double numerateur = (montant_valeur * tauxMensuel* Math.pow(1 + tauxMensuel, nombrePaiementsMensuels));
 
-        double denumerateur = (1 - Math.pow(1 + (tauxMensuel*0.01), -nombrePaiementsMensuels));
+        double denumerateur = Math.pow(1 + tauxMensuel, nombrePaiementsMensuels)-1;
 
         versementPeriodique = numerateur / denumerateur;//encore mal calculer ,donc a revoir,une fois le calcul est juste,le reste est bon.
 
@@ -106,20 +122,36 @@ public class BibliothequeRoutines {
         ((ObjectNode) sourceNode).putArray("amortissement");
 
         ObjectNode periode = mapper.objectNode();
-        for (int i = 1; i < nombrePaiementsMensuels + 1; i++) {
+        int i;
+        for ( i = 1; i < nombrePaiementsMensuels ; i++) {
             periode = mapper.objectNode();
             periode.put("période", i);
             periode.put("capitalDebut", montant_valeur);
             periode.put("versementTotal", versementPeriodique);
-            periode.put("versementInteret", montant_valeur * tauxMensuel*0.01);
-            periode.put("versementCapital", versementPeriodique - (montant_valeur * tauxMensuel*0.01));
+            periode.put("versementInteret", montant_valeur * tauxMensuel);
+            periode.put("versementCapital", versementPeriodique - (montant_valeur * tauxMensuel));
             periode.put("capitalFin", montant_valeur - versementPeriodique);
 
             ((ArrayNode) sourceNode.path("amortissement")).add(periode);
 
 
-            montant_valeur -= versementPeriodique;
+            montant_valeur -= versementPeriodique - (montant_valeur * tauxMensuel);
         }
+
+        //la deriere foi
+
+                    periode = mapper.objectNode();
+            periode.put("période", i);
+            periode.put("capitalDebut", montant_valeur);
+            periode.put("versementTotal", montant_valeur);
+            periode.put("versementInteret", 0);
+            periode.put("versementCapital", montant_valeur);
+            periode.put("capitalFin", 0);
+
+            ((ArrayNode) sourceNode.path("amortissement")).add(periode);
+
+
+            
         System.out.println("id= " + id_valeur);
         System.out.println("description= " + description_valeur);
         System.out.println("montant= " + montant_valeur);
@@ -128,7 +160,7 @@ public class BibliothequeRoutines {
         System.out.println("tauxInteret= " + tauxInteret_valeur);
         System.out.println("frequenceComposition= " + frequenceComposition_valeur);
         System.out.println("versementPeriodique= " + sourceNode.path("versementPeriodique").getValueAsDouble());
-        System.out.println(versementPeriodique);
+      //  System.out.println(versementPeriodique);
 
         return sourceNode;
     }
